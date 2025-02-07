@@ -83,9 +83,9 @@ WSGI_APPLICATION = 'marketanalysis.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'marketanalysis',  # The database you just created
-        'USER': 'root',  # Or your MySQL username
-        'PASSWORD': 'Power2020',  # Your MySQL password
+        'NAME': 'marketanalysis', 
+        'USER': 'root',  
+        'PASSWORD': 'Power2020',  
         'HOST': 'localhost',
         'PORT': '3306',
     }
@@ -130,3 +130,5 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# testing to see if git is updating
