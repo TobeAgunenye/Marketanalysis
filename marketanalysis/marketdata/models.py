@@ -4,7 +4,7 @@ from django.db import models
 # Model to Store Financial Data
 class MarketData(models.Model):
     company_name = models.CharField(max_length=100)
-    stock_symbol = models.CharField(max_length=10, unique=True)
+    stock_symbol = models.CharField(max_length=10)
     stock_price = models.FloatField()
     market_cap = models.BigIntegerField(null=True, blank=True)
     date_collected = models.DateTimeField(auto_now_add=True)

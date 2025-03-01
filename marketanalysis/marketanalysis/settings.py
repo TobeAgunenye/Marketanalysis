@@ -133,3 +133,5 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # testing to see if git is updating
+
+ALPHA_VANTAGE_API_KEY = "YD52S4R5YRLUYSLR"
