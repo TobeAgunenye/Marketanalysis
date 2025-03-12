@@ -37,8 +37,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'marketdata'
+    'marketdata',
+    'rest_framework',
+    'django_filters',
+    'corsheaders',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20
+}
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -48,6 +58,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+
 ]
 
 ROOT_URLCONF = 'marketanalysis.urls'
@@ -135,3 +147,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # testing to see if git is updating
 
 ALPHA_VANTAGE_API_KEY = "YD52S4R5YRLUYSLR"
+
+
+CORS_ALLOW_ALL_ORIGINS = True
