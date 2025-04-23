@@ -17,7 +17,11 @@ from .serializers import SentimentAnalysisSerializer
 from .lstm_model import process_and_predict
 from .models import StockData, MarketPrediction
 import pandas as pd
-
+from .serializers import MarketPredictionSerializer
+from rest_framework.generics import ListAPIView
+from .models import StockData
+from .serializers import StockDataSerializer
+from rest_framework.pagination import PageNumberPagination
 
 # def train_stock_model(request, stock_symbol):
 #     """Train the LSTM model for a stock."""
@@ -43,10 +47,44 @@ class StockDataAPIView(ListAPIView):
     ordering_fields = ['date']
 
     def get_queryset(self):
-        company = self.request.query_params.get('company', None)
+        company = self.request.query_params.get('company')
+        start_date = self.request.query_params.get('start_date')
+
+        queryset = StockData.objects.all()
+
         if company:
-            return StockData.objects.filter(company=company)
-        return StockData.objects.none()  # Return no data if company isn't passed
+            queryset = queryset.filter(company=company)
+
+        if start_date:
+            queryset = queryset.filter(date__gte=start_date)
+
+        return queryset
+
+class LargePageSetPagination(PageNumberPagination):
+    page_size = 1000
+    page_size_query_param = 'page_size'
+    max_page_size = 10000
+
+
+
+class StockSimulationAPIView(ListAPIView):
+    serializer_class = StockDataSerializer
+    pagination_class = LargePageSetPagination
+
+    def get_queryset(self):
+        company = self.request.query_params.get("company")
+        start_date = self.request.query_params.get("start_date", "2019-01-01")
+
+        queryset = StockData.objects.all().order_by("date")
+
+        if company:
+            queryset = queryset.filter(company=company)
+
+        if start_date:
+            queryset = queryset.filter(date__gte=start_date)
+
+        return queryset
+
 
 class SentimentAnalysisAPIView(generics.ListCreateAPIView):
     serializer_class = SentimentAnalysisSerializer
@@ -56,21 +94,23 @@ class SentimentAnalysisAPIView(generics.ListCreateAPIView):
         company_name = self.kwargs['company']  # This grabs the company from the URL
         # Filter the SentimentAnalysis model based on the company
         return SentimentAnalysis.objects.filter(company__company=company_name)  # Ensure 'company' field is used correctly
+    
 
 
 
 
+class MarketPredictionAPIView(generics.ListAPIView):
+    serializer_class = MarketPredictionSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ['company', 'prediction_date']
+    ordering_fields = ['prediction_date']
 
+    def get_queryset(self):
+        company = self.kwargs.get('company')  # Grabs the company from the URL
+        if company:
+            return MarketPrediction.objects.filter(company__company=company)  # Filters based on company
+        return MarketPrediction.objects.none()  # Returns empty queryset if no company is provided
 
-
-
-
-
-
-
-from django.http import JsonResponse
-from .models import StockData, MarketPrediction
-import pandas as pd
 
 def update_predictions(request, company):
     try:
@@ -83,25 +123,24 @@ def update_predictions(request, company):
         df = pd.DataFrame(list(stock_data_qs.values('date', 'close_price')))
         df.set_index('date', inplace=True)
 
-        # 3. Make prediction using LSTM
-        predicted_price, prediction_date = process_and_predict(df)
+        # 3. Make prediction using LSTM for 365 days
+        predicted_prices, prediction_dates = process_and_predict(df, forecast_days=365)
 
-        # 4. Store prediction
-        MarketPrediction.objects.update_or_create(
-            company=stock_data_qs.first(),
-            prediction_date=prediction_date,
-            defaults={
-                'predicted_price': predicted_price,
-                'confidence_score': 0.9
-            }
-        )
+        # 4. Store predictions in the database
+        for predicted_price, prediction_date in zip(predicted_prices, prediction_dates):
+            company_instance = stock_data_qs.first().company  # Assuming the company is linked to the stock data object
+            MarketPrediction.objects.update_or_create(
+                company=company_instance,
+                prediction_date=prediction_date,
+                defaults={'predicted_price': predicted_price, 'confidence_score': 0.9}
+    )
 
         return JsonResponse({
             "message": "Prediction successful",
             "company": company,
-            "predicted_price": round(float(predicted_price), 2),
-            "prediction_date": str(prediction_date),
-            })
+            "predicted_prices": [round(float(price), 2) for price in predicted_prices],
+            "prediction_dates": [str(date) for date in prediction_dates],
+        })
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
@@ -111,20 +150,6 @@ def update_predictions(request, company):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
 NEWS_API_KEY = '4fc2ae96cb50407c86ffdc38779521c8'  # Replace with your NewsAPI key
 
 def fetch_news(company):

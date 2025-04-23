@@ -44,6 +44,10 @@ class SentimentAnalysis(models.Model):
     def __str__(self):
         return f"{self.company.company} - {self.sentiment_label} ({self.sentiment_score}) ({self.article_title})"
 
+
+
+
+
 # Model to Store AI Predictions
 class MarketPrediction(models.Model):
     company = models.ForeignKey(StockData, on_delete=models.CASCADE)
@@ -52,6 +56,6 @@ class MarketPrediction(models.Model):
     prediction_date = models.DateTimeField()
 
     def __str__(self):
-        return f"{self.company.company_name} - Predicted Price: {self.predicted_price}"
+        return f"{self.company.company} - Predicted Price: {self.predicted_price}"
 
 # Create your models here.

@@ -1,22 +1,14 @@
 import numpy as np
-import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, LSTM
 from datetime import timedelta
 
-
-
-
-
-
-
-
-
-def process_and_predict(df, look_back=60):
+def process_and_predict(df, look_back=60, forecast_days=365):
     """
     df: DataFrame with 'close_price' and datetime index (already sorted by date)
-    Returns: predicted_price (float), prediction_date (datetime)
+    forecast_days: Number of days to predict into the future (set to 365 for a year)
+    Returns: predicted_prices (list of floats), prediction_dates (list of datetimes)
     """
     # 1. Prepare Data
     close_prices = df['close_price'].values.reshape(-1, 1)
@@ -43,53 +35,21 @@ def process_and_predict(df, look_back=60):
     # 3. Train
     model.fit(x_train, y_train, epochs=5, batch_size=32, verbose=0)
 
-    # 4. Predict next day
+    # 4. Predict next 'forecast_days' days
+    predictions = []
     last_60 = scaled_data[-look_back:]
     last_60 = np.reshape(last_60, (1, look_back, 1))
-    predicted_price_scaled = model.predict(last_60, verbose=0)
-    predicted_price = scaler.inverse_transform(predicted_price_scaled)[0][0]
 
-    # 5. Set prediction date (day after last date in input)
+    for _ in range(forecast_days):
+        predicted_price_scaled = model.predict(last_60, verbose=0)
+        predicted_price = scaler.inverse_transform(predicted_price_scaled)[0][0]
+        predictions.append(predicted_price)
+        
+        # Update the input for the next day by appending the predicted value
+        last_60 = np.append(last_60[:, 1:, :], predicted_price_scaled.reshape(1, 1, 1), axis=1)
+
+    # 5. Set prediction dates (the next 'forecast_days' days after the last date in input)
     last_date = df.index[-1]
-    prediction_date = last_date + timedelta(days=1)
+    prediction_dates = [last_date + timedelta(days=i+1) for i in range(forecast_days)]
 
-
-    return predicted_price, prediction_date
-
-def backtest_predictions(df, look_back=60, start_date="2019-01-01"):
-    """
-    Simulates daily predictions from a given start_date using rolling LSTM training.
-    Returns a list of dicts with prediction info.
-    """
-    from datetime import timedelta
-
-    df = df.copy()
-    df.index = pd.to_datetime(df.index)
-    df = df.sort_index()
-
-    predictions = []
-
-    # Start index
-    if start_date not in df.index:
-        raise ValueError(f"Start date {start_date} not found in data.")
-
-    start_idx = df.index.get_loc(start_date)
-
-    for i in range(start_idx, len(df) - 1):
-        window_df = df.iloc[i - look_back:i]
-        actual_price = df.iloc[i + 1]['close_price']
-        prediction_date = df.index[i + 1]
-
-        try:
-            predicted_price, _ = process_and_predict(window_df, look_back=look_back)
-        except Exception as e:
-            print(f"Skipping {prediction_date} due to error: {e}")
-            continue
-
-        predictions.append({
-            "date": prediction_date,
-            "predicted": predicted_price,
-            "actual": actual_price
-        })
-
-    return predictions
+    return predictions, prediction_dates

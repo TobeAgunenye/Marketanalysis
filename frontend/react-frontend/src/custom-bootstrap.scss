@@ -1,0 +1,11 @@
+// custom-bootstrap.scss
+
+// Import Bootstrap’s functions and variables
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
+
+// Override the primary color
+$primary: #1e3a8a;
+
+// Import the rest of Bootstrap
+@import 'bootstrap/scss/bootstrap';

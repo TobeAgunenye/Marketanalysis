@@ -1,11 +1,15 @@
 from rest_framework import serializers
-from .models import StockData
-from .models import SentimentAnalysis
+from .models import StockData, MarketPrediction, SentimentAnalysis
 
 class StockDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = StockData
         fields = '__all__'
+
+class MarketPredictionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MarketPrediction
+        fields = ['company', 'predicted_price', 'confidence_score', 'prediction_date']
 
 
 class SentimentAnalysisSerializer(serializers.ModelSerializer):
